@@ -217,6 +217,7 @@ fn pick_includes_and_builtins(out: &mut OutFile, apis: &[Api]) {
             Type::RustVec(_) => out.builtin.rust_vec = true,
             Type::UniquePtr(_) => out.include.memory = true,
             Type::SharedPtr(_) | Type::WeakPtr(_) => out.include.memory = true,
+            Type::SeastarLwSharedPtr(_) => out.include.memory = true,
             Type::Str(_) => out.builtin.rust_str = true,
             Type::CxxVector(_) => out.include.vector = true,
             Type::Fn(_) => out.builtin.rust_fn = true,
@@ -1246,6 +1247,11 @@ fn write_type(out: &mut OutFile, ty: &Type) {
             write_type(out, &ptr.inner);
             write!(out, ">");
         }
+        Type::SeastarLwSharedPtr(ptr) => {
+            write!(out, "::seastar::lw_shared_ptr<");
+            write_type(out, &ptr.inner);
+            write!(out, ">");
+        }
         Type::WeakPtr(ptr) => {
             write!(out, "::std::weak_ptr<");
             write_type(out, &ptr.inner);
@@ -1337,6 +1343,7 @@ fn write_space_after_type(out: &mut OutFile, ty: &Type) {
         | Type::RustBox(_)
         | Type::UniquePtr(_)
         | Type::SharedPtr(_)
+        | Type::SeastarLwSharedPtr(_)
         | Type::WeakPtr(_)
         | Type::Str(_)
         | Type::CxxVector(_)
@@ -1412,6 +1419,7 @@ fn write_generic_instantiations(out: &mut OutFile) {
             ImplKey::RustVec(ident) => write_rust_vec_extern(out, ident),
             ImplKey::UniquePtr(ident) => write_unique_ptr(out, ident),
             ImplKey::SharedPtr(ident) => write_shared_ptr(out, ident),
+            ImplKey::SeastarLwSharedPtr(ident) => write_seastar_lw_shared_ptr(out, ident),
             ImplKey::WeakPtr(ident) => write_weak_ptr(out, ident),
             ImplKey::CxxVector(ident) => write_cxx_vector(out, ident),
         }
@@ -1737,6 +1745,90 @@ fn write_unique_ptr_common(out: &mut OutFile, ty: UniquePtr) {
     } else {
         writeln!(out, "  ptr->~unique_ptr();");
     }
+    writeln!(out, "}}");
+}
+
+fn write_seastar_lw_shared_ptr(out: &mut OutFile, key: NamedImplKey) {
+    let ident = key.rust;
+    let resolve = out.types.resolve(ident);
+    let inner = resolve.name.to_fully_qualified();
+    let instance = resolve.name.to_symbol();
+
+    out.include.new = true;
+    out.include.utility = true;
+
+    // Some aliases are to opaque types; some are to trivial types. We can't
+    // know at code generation time, so we generate both C++ and Rust side
+    // bindings for a "new" method anyway. But the Rust code can't be called for
+    // Opaque types because the 'new' method is not implemented.
+    let can_construct_from_value = out.types.is_maybe_trivial(ident);
+
+    writeln!(
+        out,
+        "static_assert(sizeof(::seastar::lw_shared_ptr<{}>) == sizeof(void *), \"\");",
+        inner,
+    );
+    writeln!(
+        out,
+        "static_assert(alignof(::seastar::lw_shared_ptr<{}>) == alignof(void *), \"\");",
+        inner,
+    );
+    begin_function_definition(out);
+    writeln!(
+        out,
+        "void cxxbridge1$lw_shared_ptr${}$null(::seastar::lw_shared_ptr<{}> *ptr) noexcept {{",
+        instance, inner,
+    );
+    writeln!(out, "  ::new (ptr) ::seastar::lw_shared_ptr<{}>();", inner);
+    writeln!(out, "}}");
+    if can_construct_from_value {
+        out.builtin.maybe_uninit = true;
+        begin_function_definition(out);
+        writeln!(
+            out,
+            "{} *cxxbridge1$lw_shared_ptr${}$uninit(::seastar::lw_shared_ptr<{}> *ptr) noexcept {{",
+            inner, instance, inner,
+        );
+        writeln!(
+            out,
+            "  {} *uninit = reinterpret_cast<{} *>(new ::rust::MaybeUninit<{}>);",
+            inner, inner, inner,
+        );
+        writeln!(
+            out,
+            "  ::new (ptr) ::seastar::lw_shared_ptr<{}>(uninit);",
+            inner
+        );
+        writeln!(out, "  return uninit;");
+        writeln!(out, "}}");
+    }
+    begin_function_definition(out);
+    writeln!(
+        out,
+        "void cxxbridge1$lw_shared_ptr${}$clone(::seastar::lw_shared_ptr<{}> const &self, ::seastar::lw_shared_ptr<{}> *ptr) noexcept {{",
+        instance, inner, inner,
+    );
+    writeln!(
+        out,
+        "  ::new (ptr) ::seastar::lw_shared_ptr<{}>(self);",
+        inner
+    );
+    writeln!(out, "}}");
+    begin_function_definition(out);
+    writeln!(
+        out,
+        "{} const *cxxbridge1$lw_shared_ptr${}$get(::seastar::lw_shared_ptr<{}> const &self) noexcept {{",
+        inner, instance, inner,
+    );
+    writeln!(out, "  return self.get();");
+    writeln!(out, "}}");
+    begin_function_definition(out);
+    writeln!(
+        out,
+        "void cxxbridge1$lw_shared_ptr${}$drop(::seastar::lw_shared_ptr<{}> *self) noexcept {{",
+        instance, inner,
+    );
+    writeln!(out, "  self->~lw_shared_ptr();");
     writeln!(out, "}}");
 }
 

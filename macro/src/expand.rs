@@ -105,6 +105,9 @@ fn expand(ffi: Module, doc: Doc, attrs: OtherAttrs, apis: &[Api], types: &Types)
             ImplKey::SharedPtr(ident) => {
                 expanded.extend(expand_shared_ptr(ident, types, explicit_impl));
             }
+            ImplKey::SeastarLwSharedPtr(ident) => {
+                expanded.extend(expand_seastar_lw_shared_ptr(ident, types, explicit_impl));
+            }
             ImplKey::WeakPtr(ident) => {
                 expanded.extend(expand_weak_ptr(ident, types, explicit_impl));
             }
@@ -1506,6 +1509,80 @@ fn expand_shared_ptr(
 
     quote_spanned! {end_span=>
         #unsafe_token impl #impl_generics ::cxx::private::SharedPtrTarget for #ident #ty_generics {
+            fn __typename(f: &mut ::cxx::core::fmt::Formatter<'_>) -> ::cxx::core::fmt::Result {
+                f.write_str(#name)
+            }
+            unsafe fn __null(new: *mut ::cxx::core::ffi::c_void) {
+                extern "C" {
+                    #[link_name = #link_null]
+                    fn __null(new: *mut ::cxx::core::ffi::c_void);
+                }
+                __null(new);
+            }
+            #new_method
+            unsafe fn __clone(this: *const ::cxx::core::ffi::c_void, new: *mut ::cxx::core::ffi::c_void) {
+                extern "C" {
+                    #[link_name = #link_clone]
+                    fn __clone(this: *const ::cxx::core::ffi::c_void, new: *mut ::cxx::core::ffi::c_void);
+                }
+                __clone(this, new);
+            }
+            unsafe fn __get(this: *const ::cxx::core::ffi::c_void) -> *const Self {
+                extern "C" {
+                    #[link_name = #link_get]
+                    fn __get(this: *const ::cxx::core::ffi::c_void) -> *const ::cxx::core::ffi::c_void;
+                }
+                __get(this).cast()
+            }
+            unsafe fn __drop(this: *mut ::cxx::core::ffi::c_void) {
+                extern "C" {
+                    #[link_name = #link_drop]
+                    fn __drop(this: *mut ::cxx::core::ffi::c_void);
+                }
+                __drop(this);
+            }
+        }
+    }
+}
+
+fn expand_seastar_lw_shared_ptr(
+    key: NamedImplKey,
+    types: &Types,
+    explicit_impl: Option<&Impl>,
+) -> TokenStream {
+    let ident = key.rust;
+    let name = ident.to_string();
+    let resolve = types.resolve(ident);
+    let prefix = format!("cxxbridge1$lw_shared_ptr${}$", resolve.name.to_symbol());
+    let link_null = format!("{}null", prefix);
+    let link_uninit = format!("{}uninit", prefix);
+    let link_clone = format!("{}clone", prefix);
+    let link_get = format!("{}get", prefix);
+    let link_drop = format!("{}drop", prefix);
+
+    let (impl_generics, ty_generics) = generics::split_for_impl(key, explicit_impl, resolve);
+
+    let can_construct_from_value = types.is_maybe_trivial(ident);
+    let new_method = if can_construct_from_value {
+        Some(quote! {
+            unsafe fn __new(value: Self, new: *mut ::cxx::core::ffi::c_void) {
+                extern "C" {
+                    #[link_name = #link_uninit]
+                    fn __uninit(new: *mut ::cxx::core::ffi::c_void) -> *mut ::cxx::core::ffi::c_void;
+                }
+                __uninit(new).cast::<#ident #ty_generics>().write(value);
+            }
+        })
+    } else {
+        None
+    };
+
+    let begin_span = explicit_impl.map_or(key.begin_span, |explicit| explicit.impl_token.span);
+    let end_span = explicit_impl.map_or(key.end_span, |explicit| explicit.brace_token.span);
+    let unsafe_token = format_ident!("unsafe", span = begin_span);
+
+    quote_spanned! {end_span=>
+        #unsafe_token impl #impl_generics ::cxx::private::SeastarLwSharedPtrTarget for #ident #ty_generics {
             fn __typename(f: &mut ::cxx::core::fmt::Formatter<'_>) -> ::cxx::core::fmt::Result {
                 f.write_str(#name)
             }

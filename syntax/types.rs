@@ -180,6 +180,7 @@ impl<'a> Types<'a> {
                 | ImplKey::RustVec(ident)
                 | ImplKey::UniquePtr(ident)
                 | ImplKey::SharedPtr(ident)
+                | ImplKey::SeastarLwSharedPtr(ident)
                 | ImplKey::WeakPtr(ident)
                 | ImplKey::CxxVector(ident) => {
                     Atom::from(ident.rust).is_none() && !aliases.contains_key(ident.rust)

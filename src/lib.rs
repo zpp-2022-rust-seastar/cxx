@@ -337,6 +337,7 @@
 //! <tr><td>Box&lt;T&gt;</td><td>rust::Box&lt;T&gt;</td><td><sup><i>cannot hold opaque C++ type</i></sup></td></tr>
 //! <tr><td><a href="struct.UniquePtr.html">UniquePtr&lt;T&gt;</a></td><td>std::unique_ptr&lt;T&gt;</td><td><sup><i>cannot hold opaque Rust type</i></sup></td></tr>
 //! <tr><td><a href="struct.SharedPtr.html">SharedPtr&lt;T&gt;</a></td><td>std::shared_ptr&lt;T&gt;</td><td><sup><i>cannot hold opaque Rust type</i></sup></td></tr>
+//! <tr><td><a href="struct.SeastarLwSharedPtr.html">SeastarLwSharedPtr&lt;T&gt;</a></td><td>seastar::lw_shared_ptr&lt;T&gt;</td><td><sup><i>cannot hold opaque Rust type</i></sup></td></tr>
 //! <tr><td>[T; N]</td><td>std::array&lt;T, N&gt;</td><td><sup><i>cannot hold opaque C++ type</i></sup></td></tr>
 //! <tr><td>Vec&lt;T&gt;</td><td>rust::Vec&lt;T&gt;</td><td><sup><i>cannot hold opaque C++ type</i></sup></td></tr>
 //! <tr><td><a href="struct.CxxVector.html">CxxVector&lt;T&gt;</a></td><td>std::vector&lt;T&gt;</td><td><sup><i>cannot be passed by value, cannot hold opaque Rust type</i></sup></td></tr>
@@ -456,6 +457,7 @@ mod rust_str;
 mod rust_string;
 mod rust_type;
 mod rust_vec;
+mod seastar_lw_shared_ptr;
 mod shared_ptr;
 mod sip;
 #[path = "cxx_string.rs"]
@@ -471,6 +473,7 @@ pub use crate::cxx_vector::CxxVector;
 #[cfg(feature = "alloc")]
 pub use crate::exception::Exception;
 pub use crate::extern_type::{kind, ExternType};
+pub use crate::seastar_lw_shared_ptr::SeastarLwSharedPtr;
 pub use crate::shared_ptr::SharedPtr;
 pub use crate::string::CxxString;
 pub use crate::unique_ptr::UniquePtr;
@@ -509,6 +512,7 @@ pub mod private {
     pub use crate::rust_type::{ImplBox, ImplVec, RustType};
     #[cfg(feature = "alloc")]
     pub use crate::rust_vec::RustVec;
+    pub use crate::seastar_lw_shared_ptr::SeastarLwSharedPtrTarget;
     pub use crate::shared_ptr::SharedPtrTarget;
     pub use crate::string::StackString;
     pub use crate::unique_ptr::UniquePtrTarget;

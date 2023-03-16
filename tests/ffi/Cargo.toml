@@ -14,3 +14,4 @@ cxx = { path = "../..", default-features = false }
 [build-dependencies]
 cxx-build = { path = "../../gen/build" }
 cxxbridge-flags = { path = "../../flags" }
+pkg-config = "0.3"

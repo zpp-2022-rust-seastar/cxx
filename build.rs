@@ -3,11 +3,30 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
+    let seastar = pkg_config::Config::new()
+        .statik(true)
+        .probe("seastar")
+        .unwrap();
+
+    // Workaround for the fact that seastar's pkg-config file
+    // specifies the fmt dependency in a weird way. `pkg-config seastar --libs`
+    // prints a path to a particular version of fmt (e.g. libfmt.so.8.1.1)
+    // and the pkg_config crate can't parse this name as it expects to end
+    // with just ".so". pkg_config crate prints a warning and does not
+    // tell cargo to link with that library, so we have to do it manually.
+    // Unfortunately, this workaround doesn't prevent a warning from being
+    // printed by the previous command which prevents us from enforcing
+    // a no-warning policy in the CI.
+    // TODO: Remove this after seastar.pc or the pkg-config crate is fixed
+    pkg_config::Config::new().statik(true).probe("fmt").unwrap();
+
     cc::Build::new()
         .file("src/cxx.cc")
         .cpp(true)
         .cpp_link_stdlib(None) // linked via link-cplusplus crate
         .flag_if_supported(cxxbridge_flags::STD)
+        .flag_if_supported("-std=c++20")
+        .includes(&seastar.include_paths)
         .warnings_into_errors(cfg!(deny_warnings))
         .compile("cxxbridge1");
 

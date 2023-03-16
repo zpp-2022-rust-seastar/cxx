@@ -80,6 +80,10 @@ std::shared_ptr<C> c_return_shared_ptr() {
   return std::shared_ptr<C>(new C{2020});
 }
 
+seastar::lw_shared_ptr<C> c_return_seastar_lw_shared_ptr() {
+  return seastar::make_lw_shared<C>(C(2020));
+}
+
 std::unique_ptr<::H::H> c_return_ns_unique_ptr() {
   return std::unique_ptr<::H::H>(new ::H::H{"hello"});
 }
@@ -872,7 +876,7 @@ extern "C" const char *cxx_run_test() noexcept {
   ASSERT(cstr == "foo");
   ASSERT(other_cstr == "test");
 
-  const char *utf8_literal = u8"Test string";
+  const char *utf8_literal = reinterpret_cast<const char*>(u8"Test string");
   const char16_t *utf16_literal = u"Test string";
   rust::String utf8_rstring = utf8_literal;
   rust::String utf16_rstring = utf16_literal;
