@@ -15,7 +15,7 @@
 pub mod cast;
 pub mod module;
 
-use cxx::{type_id, CxxString, CxxVector, ExternType, SeastarLwSharedPtr ,SharedPtr, UniquePtr};
+use cxx::{type_id, CxxString, CxxVector, ExternType, SeastarSharedPtr, SeastarLwSharedPtr ,SharedPtr, UniquePtr};
 use std::fmt::{self, Display};
 use std::mem::MaybeUninit;
 use std::os::raw::c_char;
@@ -100,6 +100,7 @@ pub mod ffi {
         fn c_return_unique_ptr() -> UniquePtr<C>;
         fn c_return_shared_ptr() -> SharedPtr<C>;
         fn c_return_seastar_lw_shared_ptr() -> SeastarLwSharedPtr<C>;
+        fn c_return_seastar_shared_ptr() -> SeastarSharedPtr<C>;
         fn c_return_ref(shared: &Shared) -> &usize;
         fn c_return_mut(shared: &mut Shared) -> &mut usize;
         fn c_return_str(shared: &Shared) -> &str;
@@ -265,6 +266,7 @@ pub mod ffi {
         fn r_return_unique_ptr() -> UniquePtr<C>;
         fn r_return_shared_ptr() -> SharedPtr<C>;
         fn r_return_seastar_lw_shared_ptr() -> SeastarLwSharedPtr<C>;
+        fn r_return_seastar_shared_ptr() -> SeastarSharedPtr<C>;
         fn r_return_ref(shared: &Shared) -> &usize;
         fn r_return_mut(shared: &mut Shared) -> &mut usize;
         fn r_return_str(shared: &Shared) -> &str;
@@ -287,6 +289,7 @@ pub mod ffi {
         fn r_take_unique_ptr(c: UniquePtr<C>);
         fn r_take_shared_ptr(c: SharedPtr<C>);
         fn r_take_seastar_lw_shared_ptr(c: SeastarLwSharedPtr<C>);
+        fn r_take_seastar_shared_ptr(c: SeastarSharedPtr<C>);
         fn r_take_ref_r(r: &R);
         fn r_take_ref_c(c: &C);
         fn r_take_str(s: &str);
@@ -485,6 +488,18 @@ fn r_return_seastar_lw_shared_ptr() -> SeastarLwSharedPtr<ffi::C> {
     }
 }
 
+fn r_return_seastar_shared_ptr() -> SeastarSharedPtr<ffi::C> {
+    extern "C" {
+        fn cxx_test_suite_get_seastar_shared_ptr(repr: *mut SeastarSharedPtr<ffi::C>);
+    }
+    let mut shared_ptr = MaybeUninit::<SeastarSharedPtr<ffi::C>>::uninit();
+    let repr = shared_ptr.as_mut_ptr();
+    unsafe {
+        cxx_test_suite_get_seastar_shared_ptr(repr);
+        shared_ptr.assume_init()
+    }
+}
+
 fn r_return_ref(shared: &ffi::Shared) -> &usize {
     &shared.z
 }
@@ -579,6 +594,10 @@ fn r_take_shared_ptr(c: SharedPtr<ffi::C>) {
 }
 
 fn r_take_seastar_lw_shared_ptr(c: SeastarLwSharedPtr<ffi::C>) {
+    let _ = c;
+}
+
+fn r_take_seastar_shared_ptr(c: SeastarSharedPtr<ffi::C>) {
     let _ = c;
 }
 

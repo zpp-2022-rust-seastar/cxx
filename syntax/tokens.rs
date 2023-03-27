@@ -27,6 +27,7 @@ impl ToTokens for Type {
             | Type::UniquePtr(ty)
             | Type::SharedPtr(ty)
             | Type::SeastarLwSharedPtr(ty)
+            | Type::SeastarSharedPtr(ty)
             | Type::WeakPtr(ty)
             | Type::CxxVector(ty)
             | Type::RustVec(ty) => ty.to_tokens(tokens),
@@ -67,7 +68,7 @@ impl ToTokens for Ty1 {
         } = self;
         let span = name.span();
         match name.to_string().as_str() {
-            "UniquePtr" | "SeastarLwSharedPtr" | "SharedPtr" | "WeakPtr" | "CxxVector" => {
+            "UniquePtr" | "SeastarLwSharedPtr" | "SeastarSharedPtr" | "SharedPtr" | "WeakPtr" | "CxxVector" => {
                 tokens.extend(quote_spanned!(span=> ::cxx::));
             }
             "Box" => {

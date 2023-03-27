@@ -84,6 +84,10 @@ seastar::lw_shared_ptr<C> c_return_seastar_lw_shared_ptr() {
   return seastar::make_lw_shared<C>(C(2020));
 }
 
+seastar::shared_ptr<C> c_return_seastar_shared_ptr() {
+  return seastar::make_shared<C>(C(2020));
+}
+
 std::unique_ptr<::H::H> c_return_ns_unique_ptr() {
   return std::unique_ptr<::H::H>(new ::H::H{"hello"});
 }

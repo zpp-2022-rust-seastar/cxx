@@ -230,6 +230,7 @@ pub enum Type {
     UniquePtr(Box<Ty1>),
     SharedPtr(Box<Ty1>),
     SeastarLwSharedPtr(Box<Ty1>),
+    SeastarSharedPtr(Box<Ty1>),
     WeakPtr(Box<Ty1>),
     Ref(Box<Ref>),
     Ptr(Box<Ptr>),

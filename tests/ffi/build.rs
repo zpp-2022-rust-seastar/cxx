@@ -30,6 +30,8 @@ fn main() {
     build.flag_if_supported("-std=c++20");
     build.includes(&seastar.include_paths);
     build.warnings_into_errors(cfg!(deny_warnings));
+    build.flag_if_supported("-std=c++20");
+    build.includes(&seastar.include_paths);
     if cfg!(not(target_env = "msvc")) {
         build.define("CXX_TEST_INSTANTIATIONS", None);
     }
