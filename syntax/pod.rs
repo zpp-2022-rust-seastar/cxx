@@ -26,6 +26,7 @@ impl<'a> Types<'a> {
             | Type::RustVec(_)
             | Type::UniquePtr(_)
             | Type::SharedPtr(_)
+            | Type::SeastarLwSharedPtr(_)
             | Type::WeakPtr(_)
             | Type::CxxVector(_)
             | Type::Void(_) => false,

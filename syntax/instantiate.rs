@@ -9,6 +9,7 @@ pub enum ImplKey<'a> {
     RustVec(NamedImplKey<'a>),
     UniquePtr(NamedImplKey<'a>),
     SharedPtr(NamedImplKey<'a>),
+    SeastarLwSharedPtr(NamedImplKey<'a>),
     WeakPtr(NamedImplKey<'a>),
     CxxVector(NamedImplKey<'a>),
 }
@@ -39,6 +40,10 @@ impl Type {
         } else if let Type::SharedPtr(ty) = self {
             if let Type::Ident(ident) = &ty.inner {
                 return Some(ImplKey::SharedPtr(NamedImplKey::new(ty, ident)));
+            }
+        } else if let Type::SeastarLwSharedPtr(ty) = self {
+            if let Type::Ident(ident) = &ty.inner {
+                return Some(ImplKey::SeastarLwSharedPtr(NamedImplKey::new(ty, ident)));
             }
         } else if let Type::WeakPtr(ty) = self {
             if let Type::Ident(ident) = &ty.inner {

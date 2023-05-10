@@ -49,6 +49,7 @@ fn do_typecheck(cx: &mut Check) {
             Type::RustVec(ty) => check_type_rust_vec(cx, ty),
             Type::UniquePtr(ptr) => check_type_unique_ptr(cx, ptr),
             Type::SharedPtr(ptr) => check_type_shared_ptr(cx, ptr),
+            Type::SeastarLwSharedPtr(ptr) => check_type_seastar_lw_shared_ptr(cx, ptr),
             Type::WeakPtr(ptr) => check_type_weak_ptr(cx, ptr),
             Type::CxxVector(ptr) => check_type_cxx_vector(cx, ptr),
             Type::Ref(ty) => check_type_ref(cx, ty),
@@ -173,6 +174,33 @@ fn check_type_shared_ptr(cx: &mut Check, ptr: &Ty1) {
     }
 
     cx.error(ptr, "unsupported shared_ptr target type");
+}
+
+fn check_type_seastar_lw_shared_ptr(cx: &mut Check, ptr: &Ty1) {
+    if let Type::Ident(ident) = &ptr.inner {
+        if cx.types.rust.contains(&ident.rust) {
+            cx.error(
+                ptr,
+                "seastar::lw_shared_ptr of a Rust type is not supported yet",
+            );
+            return;
+        }
+
+        match Atom::from(&ident.rust) {
+            None | Some(Bool) | Some(U8) | Some(U16) | Some(U32) | Some(U64) | Some(Usize)
+            | Some(I8) | Some(I16) | Some(I32) | Some(I64) | Some(Isize) | Some(F32)
+            | Some(F64) | Some(CxxString) => return,
+            Some(Char) | Some(RustString) => {}
+        }
+    } else if let Type::CxxVector(_) = &ptr.inner {
+        cx.error(
+            ptr,
+            "seastar::lw_shared_ptr<std::vector> is not supported yet",
+        );
+        return;
+    }
+
+    cx.error(ptr, "unsupported seastar::lw_shared_ptr target type");
 }
 
 fn check_type_weak_ptr(cx: &mut Check, ptr: &Ty1) {
@@ -518,6 +546,7 @@ fn check_api_impl(cx: &mut Check, imp: &Impl) {
         | Type::RustVec(ty)
         | Type::UniquePtr(ty)
         | Type::SharedPtr(ty)
+        | Type::SeastarLwSharedPtr(ty)
         | Type::WeakPtr(ty)
         | Type::CxxVector(ty) => {
             if let Type::Ident(inner) = &ty.inner {
@@ -599,6 +628,7 @@ fn check_reserved_name(cx: &mut Check, ident: &Ident) {
     if ident == "Box"
         || ident == "UniquePtr"
         || ident == "SharedPtr"
+        || ident == "SeastarLwSharedPtr"
         || ident == "WeakPtr"
         || ident == "Vec"
         || ident == "CxxVector"
@@ -646,6 +676,7 @@ fn is_unsized(cx: &mut Check, ty: &Type) -> bool {
         | Type::RustVec(_)
         | Type::UniquePtr(_)
         | Type::SharedPtr(_)
+        | Type::SeastarLwSharedPtr(_)
         | Type::WeakPtr(_)
         | Type::Ref(_)
         | Type::Ptr(_)
@@ -720,6 +751,7 @@ fn describe(cx: &mut Check, ty: &Type) -> String {
         Type::RustVec(_) => "Vec".to_owned(),
         Type::UniquePtr(_) => "unique_ptr".to_owned(),
         Type::SharedPtr(_) => "shared_ptr".to_owned(),
+        Type::SeastarLwSharedPtr(_) => "lw_shared_ptr".to_owned(),
         Type::WeakPtr(_) => "weak_ptr".to_owned(),
         Type::Ref(_) => "reference".to_owned(),
         Type::Ptr(_) => "raw pointer".to_owned(),

@@ -29,6 +29,7 @@ link-cplusplus = "1.0"
 [build-dependencies]
 cc = "1.0.49"
 cxxbridge-flags = { version = "=1.0.92", path = "flags", default-features = false }
+pkg-config = "0.3"
 
 [dev-dependencies]
 cxx-build = { version = "=1.0.92", path = "gen/build" }
