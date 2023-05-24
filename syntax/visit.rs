@@ -16,6 +16,7 @@ where
         | Type::UniquePtr(ty)
         | Type::SharedPtr(ty)
         | Type::SeastarLwSharedPtr(ty)
+        | Type::SeastarSharedPtr(ty)
         | Type::WeakPtr(ty)
         | Type::CxxVector(ty)
         | Type::RustVec(ty) => visitor.visit_type(&ty.inner),

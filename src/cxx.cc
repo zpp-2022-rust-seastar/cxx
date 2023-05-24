@@ -770,6 +770,35 @@ static_assert(sizeof(std::string) <= kMaxExpectedWordsInString * sizeof(void *),
     self->~lw_shared_ptr();                                                           \
   }                                                                                   \
 
+#define SEASTAR_SHARED_PTR_OPS(RUST_TYPE, CXX_TYPE)                                \
+  static_assert(sizeof(seastar::shared_ptr<CXX_TYPE>) == 2 * sizeof(void *), "");      \
+  static_assert(alignof(seastar::shared_ptr<CXX_TYPE>) == alignof(void *), "");    \
+  void cxxbridge1$seastar$shared_ptr$##RUST_TYPE##$null(                           \
+      seastar::shared_ptr<CXX_TYPE> *ptr) noexcept {                               \
+    new (ptr) seastar::shared_ptr<CXX_TYPE>();                                     \
+  }                                                                                \
+  CXX_TYPE *cxxbridge1$seastar$shared_ptr$##RUST_TYPE##$uninit(                    \
+    seastar::shared_ptr<CXX_TYPE> *ptr) noexcept {                                 \
+    seastar::shared_ptr<rust::MaybeUninit<CXX_TYPE>>* uninit_ptr =                 \
+      reinterpret_cast<seastar::shared_ptr<rust::MaybeUninit<CXX_TYPE>>*>(ptr);    \
+    new (uninit_ptr) seastar::shared_ptr<rust::MaybeUninit<CXX_TYPE>>(seastar::make_shared<rust::MaybeUninit<CXX_TYPE>>()); \
+    return ptr->get();                                                             \
+  }                                                                                \
+  void cxxbridge1$seastar$shared_ptr$##RUST_TYPE##$clone(                          \
+      const seastar::shared_ptr<CXX_TYPE> &self,                                   \
+      seastar::shared_ptr<CXX_TYPE> *ptr) noexcept {                               \
+    new (ptr) seastar::shared_ptr<CXX_TYPE>(self);                                 \
+  }                                                                                \
+  const CXX_TYPE *cxxbridge1$seastar$shared_ptr$##RUST_TYPE##$get(                 \
+      const seastar::shared_ptr<CXX_TYPE> &self) noexcept {                        \
+    return self.get();                                                             \
+  }                                                                                \
+  void cxxbridge1$seastar$shared_ptr$##RUST_TYPE##$drop(                           \
+      const seastar::shared_ptr<CXX_TYPE> *self) noexcept {                        \
+    self->~shared_ptr();                                                           \
+  }                                                                                \
+
+
 // Usize and isize are the same type as one of the below.
 #define FOR_EACH_NUMERIC(MACRO)                                                \
   MACRO(u8, std::uint8_t)                                                      \
@@ -815,12 +844,20 @@ static_assert(sizeof(std::string) <= kMaxExpectedWordsInString * sizeof(void *),
   MACRO(isize, rust::isize)                                                    \
   MACRO(string, std::string)
 
+#define FOR_EACH_SEASTAR_SHARED_PTR(MACRO)                                  \
+  FOR_EACH_NUMERIC(MACRO)                                                      \
+  MACRO(bool, bool)                                                            \
+  MACRO(usize, std::size_t)                                                    \
+  MACRO(isize, rust::isize)                                                    \
+  MACRO(string, std::string)
+
 extern "C" {
 FOR_EACH_STD_VECTOR(STD_VECTOR_OPS)
 FOR_EACH_TRIVIAL_STD_VECTOR(STD_VECTOR_TRIVIAL_OPS)
 FOR_EACH_RUST_VEC(RUST_VEC_EXTERNS)
 FOR_EACH_SHARED_PTR(SHARED_PTR_OPS)
 FOR_EACH_SEASTAR_LW_SHARED_PTR(SEASTAR_LW_SHARED_PTR_OPS)
+FOR_EACH_SEASTAR_SHARED_PTR(SEASTAR_SHARED_PTR_OPS)
 } // extern "C"
 
 namespace rust {
